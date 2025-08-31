@@ -36,6 +36,7 @@ module tqvp_tiny_sprite_engine (
     wire visible;
     reg [9:0] pix_x;
     reg [9:0] pix_y;
+    wire sprite_pixel_on
     
     video_controller 
     u_video_controller(
@@ -67,7 +68,7 @@ wire [1:0] bg_R, bg_G, bg_B;
     // Sprite Engine - up to 8 objects, fluid RAM format
     //-------------------------------------------------------------------
     wire sprite_pixel_on;
-    dino_sprite_engine_fluid #(.MAX_SPRITES(8)) sprite_engine (
+    fluid_sprite #(.MAX_SPRITES(8)) sprite_engine (
         .clk(clk),
         .rst_n(rst_n),
         .video_active(visible),
@@ -75,12 +76,12 @@ wire [1:0] bg_R, bg_G, bg_B;
         .pix_y(pix_y),
         .vsync(vsync),
         // Flat RAM Bus exposure
-        .address(sprite_address),
-        .data_in(sprite_data_in),
-        .data_write_n(sprite_data_write_n),
-        .data_read_n(sprite_data_read_n),
-        .data_out(sprite_data_out),
-        .data_ready(sprite_data_ready),
+        .address(address),
+        .data_in(data_in),
+        .data_write_n(data_write_n),
+        .data_read_n(data_read_n),
+        .data_out(data_out),
+        .data_ready(data_ready),
         .user_interrupt(user_interrupt),
         // Result: pixel
         .sprite_pixel_on(sprite_pixel_on)
