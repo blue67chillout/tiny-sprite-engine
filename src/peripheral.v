@@ -38,8 +38,7 @@ module tqvp_tiny_sprite_engine (
     reg [9:0] pix_y;
     wire sprite_pixel_on
     
-    video_controller 
-    u_video_controller(
+    video_controller u_video_controller(
         .clk      	(clk       ),
         .reset    	(rst_n     ),
         .polarity 	(1'b1      ), // 0 = negative polarity (VGA, SVGA), 1 = positive polarity (XGA, SXGA)
