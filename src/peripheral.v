@@ -54,7 +54,7 @@ wire [1:0] bg_R, bg_G, bg_B;
     dino_pixel_bg_synth background (
         .clk(clk),
         .rst_n(rst_n),
-        .video_active(video_active),
+        .video_active(visible),
         .pix_x(pix_x),
         .pix_y(pix_y),
         .vsync(vsync),
@@ -70,7 +70,7 @@ wire [1:0] bg_R, bg_G, bg_B;
     dino_sprite_engine_fluid #(.MAX_SPRITES(8)) sprite_engine (
         .clk(clk),
         .rst_n(rst_n),
-        .video_active(video_active),
+        .video_active(visible),
         .pix_x(pix_x),
         .pix_y(pix_y),
         .vsync(vsync),
