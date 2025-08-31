@@ -36,7 +36,7 @@ module tqvp_tiny_sprite_engine (
     wire visible;
     reg [9:0] pix_x;
     reg [9:0] pix_y;
-    wire sprite_pixel_on
+    wire sprite_pixel_on ;
     
     video_controller u_video_controller(
         .clk      	(clk       ),
