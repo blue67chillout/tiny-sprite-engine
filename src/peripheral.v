@@ -31,8 +31,6 @@ module tqvp_tiny_sprite_engine (
     output wire        user_interrupt  // Dedicated interrupt request for this peripheral
 );
 
-
-    // output declaration of module video_controller
     reg hsync;
     reg vsync;
     wire visible;
@@ -42,8 +40,8 @@ module tqvp_tiny_sprite_engine (
     video_controller 
     u_video_controller(
         .clk      	(clk       ),
-        .reset    	(reset     ),
-        .polarity 	(polarity  ),
+        .reset    	(rst_n     ),
+        .polarity 	(1'b1      ), // 0 = negative polarity (VGA, SVGA), 1 = positive polarity (XGA, SXGA)
         .hsync    	(hsync     ),
         .vsync    	(vsync     ),
         .visible  	(visible   ),
