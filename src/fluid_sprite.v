@@ -3,7 +3,7 @@
 // controlled bitmap-write mode, and vsync-driven user_interrupt request/swap.
 
 module fluid_sprite #(
-    parameter MAX_SPRITES = 8         // must be small for combinational rendering
+    parameter MAX_SPRITES = 2         // must be small for combinational rendering
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -24,16 +24,16 @@ module fluid_sprite #(
 );
 
     // ---- memory map and sizes ----
-    // This design has 64 bytes of host-visible memory (address 0..63).
+ 
     // Layout convention:
     // 0 .. OBJ_BYTES*MAX_SPRITES-1 : object table (staging writes; active used for display)
     // BITMAP_BASE .. BITMAP_BASE + BITMAP_BYTES-1 : bitmap storage (1bpp packed)
     // CONTROL_ADDR : control/status register (single byte used)
     localparam OBJ_BYTES     = 4;
     localparam OBJ_REGION_SZ = OBJ_BYTES * MAX_SPRITES; // bytes used for object table
-    localparam BITMAP_BASE   = 32;       // start address for bitmap storage (changeable)
-    localparam BITMAP_BYTES  = 31 - OBJ_REGION_SZ; // remaining bytes (keep some spare)
-    localparam CONTROL_ADDR  = 63;       // last byte reserved for control/status
+    localparam BITMAP_BASE   = OBJ_REGION_SZ;           // start address for bitmap storage (auto-adjusted)
+    localparam BITMAP_BYTES  = 63 - OBJ_REGION_SZ;      // remaining bytes up to CONTROL_ADDR
+    localparam CONTROL_ADDR  = 63;                      // last byte reserved for control/status
 
     // --- internal memories ---
     reg [7:0] active_obj_ram  [0:OBJ_REGION_SZ-1]; // read by renderer (active frame)
@@ -115,11 +115,10 @@ module fluid_sprite #(
         end
     end
 
-    // Host read combinationally returns data from ACTIVE region (what is currently displayed)
 reg [1:0] data_read_n_reg;
 reg [5:0] address_reg;
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk ) begin
     if (!rst_n) begin
         data_ready <= 1'b0;
         data_out   <= 32'b0;
@@ -201,7 +200,7 @@ end
 // --- Sprite test loop uses active_obj_ram for stable frame display ---
     integer spr_idx;
     reg pix_hit;
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk ) begin
         if (!rst_n) begin
             pix_hit <= 1'b0;
         end else begin

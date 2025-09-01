@@ -37,7 +37,7 @@ module tt_um_tqv_peripheral_harness (
   always @(negedge clk) rst_reg_n <= rst_n;
 
   // The peripheral under test.
-  // **** Change the module name from tqvp_example to match your peripheral. ****
+  // **** Change the  name from tqvp_example to match your peripheral. ****
   tqvp_tiny_sprite_engine user_peripheral(
     .clk(clk),
     .rst_n(rst_reg_n),
