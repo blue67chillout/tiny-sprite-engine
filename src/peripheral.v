@@ -52,7 +52,7 @@ module tqvp_tiny_sprite_engine (
     
 
 wire [1:0] bg_R, bg_G, bg_B;
-    dino_pixel_bg_synth background (
+    bg background (
         .clk(clk),
         .rst_n(rst_n),
         .video_active(visible),
