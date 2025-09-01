@@ -14,6 +14,11 @@ module tb ();
   end
 
   // Wire up the inputs and outputs:
+`ifdef GL_TEST
+`endif
+`ifdef GL_TEST
+`endif
+
   reg clk;
   reg rst_n;
   reg ena;
@@ -22,6 +27,14 @@ module tb ();
   wire [7:0] uo_out;
   wire [7:0] uio_out;
   wire [7:0] uio_oe;
+  wire vsync, hsync;
+  wire [1:0] R, G, B;
+  // Map uo_out to vsync, hsync, B, G, R as per peripheral.v
+  assign vsync = uo_out[7];
+  assign hsync = uo_out[6];
+  assign B = uo_out[5:4];
+  assign G = uo_out[3:2];
+  assign R = uo_out[1:0];
 `ifdef GL_TEST
   wire VPWR = 1'b1;
   wire VGND = 1'b0;
@@ -42,7 +55,7 @@ module tb ();
       .uio_oe (uio_oe),   // IOs: Enable path (active high: 0=input, 1=output)
       .ena    (ena),      // enable - goes high when design is selected
       .clk    (clk),      // clock
-      .rst_n  (rst_n)     // not reset
+      .rst_n  (rst_n)
   );
 
 endmodule

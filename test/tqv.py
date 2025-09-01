@@ -27,13 +27,13 @@ class TinyQV:
         assert self.dut.uio_oe.value == 0b00001011
 
     # Write a value to a byte register in your design
-    # reg is the address of the register in the range 0-15
+    # reg is the address of the register in the range 0-63
     # value is the value to be written, in the range 0-255
     async def write_byte_reg(self, reg, value):
         await spi_write_cpha0(self.dut.clk, self.dut.uio_in, reg, value, 0)
 
     # Read the value of a byte register from your design
-    # reg is the address of the register in the range 0-15
+    # reg is the address of the register in the range 0-63
     # The returned value is the data read from the register, in the range 0-255
     async def read_byte_reg(self, reg):
         return await spi_read_cpha0(self.dut.clk, self.dut.uio_in, self.dut.uio_out, self.dut.uio_out[1], reg, 0, 0)

@@ -94,7 +94,7 @@ wire [1:0] bg_R, bg_G, bg_B;
     assign G = R;
     assign B = R;
 
-
+assign uo_out = {vsync, hsync, B, G, R}; 
 
 
 endmodule

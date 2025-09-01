@@ -5,7 +5,10 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = peripheral.v
+
+# List all top-level Verilog sources for your project
+PROJECT_SOURCES = peripheral.v bg.v fluid_sprite.v video_controller.v
+# Add wrapper and test harness modules
 ADDITIONAL_SOURCES = tt_wrapper.v test_harness/*.sv
 
 ifneq ($(GATES),yes)
@@ -39,7 +42,8 @@ COMPILE_ARGS 		+= -I$(SRC_DIR)
 VERILOG_SOURCES += $(PWD)/tb.v
 TOPLEVEL = tb
 
-# MODULE is the basename of the Python test file
+
+# MODULE is the basename of the Python test file (test.py)
 MODULE = test
 
 # include cocotb's make rules to take care of the simulator setup
