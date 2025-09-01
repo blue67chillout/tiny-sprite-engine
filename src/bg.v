@@ -9,7 +9,6 @@ module bg (
     output wire [1:0]  G,
     output wire [1:0]  B
 );
-    // VGA/Game Constants
     localparam H_RES = 640;
     localparam V_RES = 480;
 
@@ -50,7 +49,7 @@ module bg (
                                   : GROUND_Y;
     wire is_ground_line = (pix_y == ground_y_for_x);
 
-    //------------------- Ground Dots, Scrolling ------------------------
+    // //------------------- Ground Dots, Scrolling ------------------------
     wire [10:0] scroll_x = pix_x + scroll_counter;
     wire [3:0] mod8  = (scroll_x>=16) ? (scroll_x-16) : (scroll_x>=8) ? (scroll_x-8) : scroll_x;
     wire [3:0] mod11 = (scroll_x>=22) ? (scroll_x-22) : (scroll_x>=11) ? (scroll_x-11) : scroll_x;
@@ -61,48 +60,65 @@ module bg (
           (mod11 == 4 && pix_y == ground_y_for_x+5)  ||
           (mod17 == 9 && pix_y == ground_y_for_x+7));
 
-    //----------------------------- Clouds ------------------------------
-    localparam CLOUD_W = 20, CLOUD_H = 8, CLOUD_SCALE = 2;
+    // //----------------------------- Clouds ------------------------------
+localparam CLOUD_W = 20, CLOUD_H = 8, CLOUD_SCALE = 2;
 
-    function [CLOUD_W-1:0] cloud_sprite_rom;
-        input [2:0] row;
-        begin
-            case(row)
-                3'd0: cloud_sprite_rom = 20'b00000001111000000000;
-                3'd1: cloud_sprite_rom = 20'b00000111111100000000;
-                3'd2: cloud_sprite_rom = 20'b00011111111110000000;
-                3'd3: cloud_sprite_rom = 20'b00111111111111000000;
-                3'd4: cloud_sprite_rom = 20'b01111111111111100000;
-                3'd5: cloud_sprite_rom = 20'b00111111111111000000;
-                3'd6: cloud_sprite_rom = 20'b00011111111110000000;
-                3'd7: cloud_sprite_rom = 20'b00000111111100000000;
-                default: cloud_sprite_rom = 20'b0;
-            endcase
-        end
-    endfunction
+// ROM-like lookup using case — outputs 1 line (20 bits) for a given row
+reg [CLOUD_W-1:0] cloud_sprite_line;
+always @(*) begin
+    case (c1_sprite_y)
+        3'd0: cloud_sprite_line = 20'b00000001111000000000;
+        3'd1: cloud_sprite_line = 20'b00000111111100000000;
+        3'd2: cloud_sprite_line = 20'b00011111111110000000;
+        3'd3: cloud_sprite_line = 20'b00111111111111000000;
+        3'd4: cloud_sprite_line = 20'b01111111111111100000;
+        3'd5: cloud_sprite_line = 20'b00111111111111000000;
+        3'd6: cloud_sprite_line = 20'b00011111111110000000;
+        3'd7: cloud_sprite_line = 20'b00000111111100000000;
+        default: cloud_sprite_line = 20'b0;
+    endcase
+end
 
-    wire [10:0] temp_c1_x = 140 + H_RES - (scroll_counter >> 1);
-    wire [9:0]  c1_x = (temp_c1_x >= H_RES) ? (temp_c1_x - H_RES) : temp_c1_x;
-    wire [10:0] temp_c2_x = 340 + H_RES - (scroll_counter >> 2);
-    wire [9:0]  c2_x = (temp_c2_x >= H_RES) ? (temp_c2_x - H_RES) : temp_c2_x;
-    localparam C1_Y = GROUND_Y - 156;
-    localparam C2_Y = GROUND_Y - 136;
+reg [CLOUD_W-1:0] cloud_sprite_line2;
+always @(*) begin
+    case (c2_sprite_y)
+        3'd0: cloud_sprite_line2 = 20'b00000001111000000000;
+        3'd1: cloud_sprite_line2 = 20'b00000111111100000000;
+        3'd2: cloud_sprite_line2 = 20'b00011111111110000000;
+        3'd3: cloud_sprite_line2 = 20'b00111111111111000000;
+        3'd4: cloud_sprite_line2 = 20'b01111111111111100000;
+        3'd5: cloud_sprite_line2 = 20'b00111111111111000000;
+        3'd6: cloud_sprite_line2 = 20'b00011111111110000000;
+        3'd7: cloud_sprite_line2 = 20'b00000111111100000000;
+        default: cloud_sprite_line2 = 20'b0;
+    endcase
+end
 
-    wire in_cloud1_box = (pix_x >= c1_x) && (pix_x < c1_x + CLOUD_W*CLOUD_SCALE) &&
-                         (pix_y >= C1_Y) && (pix_y < C1_Y + CLOUD_H*CLOUD_SCALE);
-    wire in_cloud2_box = (pix_x >= c2_x) && (pix_x < c2_x + CLOUD_W*CLOUD_SCALE) &&
-                         (pix_y >= C2_Y) && (pix_y < C2_Y + CLOUD_H*CLOUD_SCALE);
-    wire [9:0] c1_local_x = pix_x - c1_x;
-    wire [9:0] c1_local_y = pix_y - C1_Y;
-    wire [9:0] c2_local_x = pix_x - c2_x;
-    wire [9:0] c2_local_y = pix_y - C2_Y;
-    wire [4:0] c1_sprite_x = c1_local_x >> 1; // CLOUD_SCALE = 2
-    wire [2:0] c1_sprite_y = c1_local_y >> 1;
-    wire [4:0] c2_sprite_x = c2_local_x >> 1;
-    wire [2:0] c2_sprite_y = c2_local_y >> 1;
-    wire is_cloud1 = in_cloud1_box && cloud_sprite_rom(c1_sprite_y)[CLOUD_W-1-c1_sprite_x];
-    wire is_cloud2 = in_cloud2_box && cloud_sprite_rom(c2_sprite_y)[CLOUD_W-1-c2_sprite_x];
-    wire is_cloud  = is_cloud1 || is_cloud2;
+wire [10:0] temp_c1_x = 140 + H_RES - (scroll_counter >> 1);
+wire [9:0]  c1_x = (temp_c1_x >= H_RES) ? (temp_c1_x - H_RES) : temp_c1_x;
+wire [10:0] temp_c2_x = 340 + H_RES - (scroll_counter >> 2);
+wire [9:0]  c2_x = (temp_c2_x >= H_RES) ? (temp_c2_x - H_RES) : temp_c2_x;
+localparam C1_Y = GROUND_Y - 156;
+localparam C2_Y = GROUND_Y - 136;
+
+wire in_cloud1_box = (pix_x >= c1_x) && (pix_x < c1_x + CLOUD_W*CLOUD_SCALE) &&
+                     (pix_y >= C1_Y) && (pix_y < C1_Y + CLOUD_H*CLOUD_SCALE);
+wire in_cloud2_box = (pix_x >= c2_x) && (pix_x < c2_x + CLOUD_W*CLOUD_SCALE) &&
+                     (pix_y >= C2_Y) && (pix_y < C2_Y + CLOUD_H*CLOUD_SCALE);
+
+wire [9:0] c1_local_x = pix_x - c1_x;
+wire [9:0] c1_local_y = pix_y - C1_Y;
+wire [9:0] c2_local_x = pix_x - c2_x;
+wire [9:0] c2_local_y = pix_y - C2_Y;
+
+wire [4:0] c1_sprite_x = c1_local_x >> 1; // CLOUD_SCALE = 2
+wire [2:0] c1_sprite_y = c1_local_y >> 1;
+wire [4:0] c2_sprite_x = c2_local_x >> 1;
+wire [2:0] c2_sprite_y = c2_local_y >> 1;
+
+wire is_cloud1 = in_cloud1_box && cloud_sprite_line[CLOUD_W-1-c1_sprite_x];
+wire is_cloud2 = in_cloud2_box && cloud_sprite_line2[CLOUD_W-1-c2_sprite_x];
+wire is_cloud  = is_cloud1 || is_cloud2;
 
     //------------------------ Stars: Plus and Cross Twinkle -----------
     localparam STAR_SIZE = 2;

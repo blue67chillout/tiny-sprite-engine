@@ -57,7 +57,7 @@ module fluid_sprite #(
     integer spr_idx;
     reg pix_hit;
 
-    always @* begin
+    always @ (*) begin
         pix_hit = 1'b0;
         for (spr_idx = 0; spr_idx < MAX_SPRITES; spr_idx = spr_idx + 1) begin : SPRITES
             reg [7:0] x, y, bitmap_offset, size_byte;
@@ -75,7 +75,7 @@ module fluid_sprite #(
             width  = size_byte[7:4] + 1;
             height = size_byte[3:0] + 1;
 
-            // SPRITE BLIT: all in **logical** coordinates!
+            // SPRITE BLIT: all in logical coordinates!
             if (    video_active
                 && (logic_x >= x) && (logic_x < x + width)
                 && (logic_y >= y) && (logic_y < y + height)) begin
