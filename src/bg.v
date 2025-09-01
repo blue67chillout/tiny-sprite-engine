@@ -63,40 +63,28 @@ module bg (
     // //----------------------------- Clouds ------------------------------
 localparam CLOUD_W = 20, CLOUD_H = 8, CLOUD_SCALE = 2;
 
-// ROM-like lookup using case — outputs 1 line (20 bits) for a given row
-reg [CLOUD_W-1:0] cloud_sprite_line;
-always @(*) begin
-    case (c1_sprite_y)
-        3'd0: cloud_sprite_line = 20'b00000001111000000000;
-        3'd1: cloud_sprite_line = 20'b00000111111100000000;
-        3'd2: cloud_sprite_line = 20'b00011111111110000000;
-        3'd3: cloud_sprite_line = 20'b00111111111111000000;
-        3'd4: cloud_sprite_line = 20'b01111111111111100000;
-        3'd5: cloud_sprite_line = 20'b00111111111111000000;
-        3'd6: cloud_sprite_line = 20'b00011111111110000000;
-        3'd7: cloud_sprite_line = 20'b00000111111100000000;
-        default: cloud_sprite_line = 20'b0;
-    endcase
-end
+function [CLOUD_W-1:0] get_cloud_sprite_line;
+    input [2:0] y;
+    begin
+        case (y)
+            3'd0: get_cloud_sprite_line = 20'b00000001111000000000;
+            3'd1: get_cloud_sprite_line = 20'b00000111111100000000;
+            3'd2: get_cloud_sprite_line = 20'b00011111111110000000;
+            3'd3: get_cloud_sprite_line = 20'b00111111111111000000;
+            3'd4: get_cloud_sprite_line = 20'b01111111111111100000;
+            3'd5: get_cloud_sprite_line = 20'b00111111111111000000;
+            3'd6: get_cloud_sprite_line = 20'b00011111111110000000;
+            3'd7: get_cloud_sprite_line = 20'b00000111111100000000;
+            default: get_cloud_sprite_line = 20'b0;
+        endcase
+    end
+endfunction
 
-reg [CLOUD_W-1:0] cloud_sprite_line2;
-always @(*) begin
-    case (c2_sprite_y)
-        3'd0: cloud_sprite_line2 = 20'b00000001111000000000;
-        3'd1: cloud_sprite_line2 = 20'b00000111111100000000;
-        3'd2: cloud_sprite_line2 = 20'b00011111111110000000;
-        3'd3: cloud_sprite_line2 = 20'b00111111111111000000;
-        3'd4: cloud_sprite_line2 = 20'b01111111111111100000;
-        3'd5: cloud_sprite_line2 = 20'b00111111111111000000;
-        3'd6: cloud_sprite_line2 = 20'b00011111111110000000;
-        3'd7: cloud_sprite_line2 = 20'b00000111111100000000;
-        default: cloud_sprite_line2 = 20'b0;
-    endcase
-end
+
 
 wire [10:0] temp_c1_x = 140 + H_RES - (scroll_counter >> 1);
 wire [9:0]  c1_x = (temp_c1_x >= H_RES) ? (temp_c1_x - H_RES) : temp_c1_x;
-wire [10:0] temp_c2_x = 340 + H_RES - (scroll_counter >> 2);
+wire [10:0] temp_c2_x = 340 + H_RES - (scroll_counter >> 1);
 wire [9:0]  c2_x = (temp_c2_x >= H_RES) ? (temp_c2_x - H_RES) : temp_c2_x;
 localparam C1_Y = GROUND_Y - 156;
 localparam C2_Y = GROUND_Y - 136;
@@ -115,6 +103,9 @@ wire [4:0] c1_sprite_x = c1_local_x >> 1; // CLOUD_SCALE = 2
 wire [2:0] c1_sprite_y = c1_local_y >> 1;
 wire [4:0] c2_sprite_x = c2_local_x >> 1;
 wire [2:0] c2_sprite_y = c2_local_y >> 1;
+
+wire [CLOUD_W-1:0] cloud_sprite_line = get_cloud_sprite_line(c1_sprite_y);
+wire [CLOUD_W-1:0] cloud_sprite_line2 = get_cloud_sprite_line(c2_sprite_y);
 
 wire is_cloud1 = in_cloud1_box && cloud_sprite_line[CLOUD_W-1-c1_sprite_x];
 wire is_cloud2 = in_cloud2_box && cloud_sprite_line2[CLOUD_W-1-c2_sprite_x];

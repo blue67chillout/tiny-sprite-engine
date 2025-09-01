@@ -116,39 +116,53 @@ module fluid_sprite #(
     end
 
     // Host read combinationally returns data from ACTIVE region (what is currently displayed)
-    always @(*) begin
-        data_ready = (data_read_n != 2'b11);
-        data_out = 32'b0;
-        if (data_read_n != 2'b11) begin
-            if (data_read_n == 2'b00) begin
+reg [1:0] data_read_n_reg;
+reg [5:0] address_reg;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        data_ready <= 1'b0;
+        data_out   <= 32'b0;
+        data_read_n_reg <= 2'b11;
+        address_reg     <= 6'b0;
+    end else begin
+        // Latch the read request
+        data_read_n_reg <= data_read_n;
+        address_reg     <= address;
+
+        data_ready <= (data_read_n_reg != 2'b11);
+        data_out   <= 32'b0;
+        if (data_read_n_reg != 2'b11) begin
+            if (data_read_n_reg == 2'b00) begin
                 // byte read
-                if (address < OBJ_REGION_SZ) data_out[7:0] = active_obj_ram[address];
-                else if ((address >= BITMAP_BASE) && (address < BITMAP_BASE + BITMAP_BYTES))
-                    data_out[7:0] = bitmap_ram[address - BITMAP_BASE];
-                else if (address == CONTROL_ADDR) data_out[7:0] = control_reg;
-            end else if (data_read_n == 2'b01) begin
+                if (address_reg < OBJ_REGION_SZ) data_out[7:0] <= active_obj_ram[address_reg];
+                else if ((address_reg >= BITMAP_BASE) && (address_reg < BITMAP_BASE + BITMAP_BYTES))
+                    data_out[7:0] <= bitmap_ram[address_reg - BITMAP_BASE];
+                else if (address_reg == CONTROL_ADDR) data_out[7:0] <= control_reg;
+            end else if (data_read_n_reg == 2'b01) begin
                 // halfword
-                if ((address + 1) < OBJ_REGION_SZ) begin
-                    data_out[15:0] = { active_obj_ram[address+1], active_obj_ram[address] };
-                end else if ((address >= BITMAP_BASE) && ((address + 1) < BITMAP_BASE + BITMAP_BYTES)) begin
-                    data_out[15:0] = { bitmap_ram[address+1 - BITMAP_BASE], bitmap_ram[address - BITMAP_BASE] };
-                end else if (address == CONTROL_ADDR - 1) begin
-                    data_out[15:0] = { 8'b0, control_reg };
+                if ((address_reg + 1) < OBJ_REGION_SZ) begin
+                    data_out[15:0] <= { active_obj_ram[address_reg+1], active_obj_ram[address_reg] };
+                end else if ((address_reg >= BITMAP_BASE) && ((address_reg + 1) < BITMAP_BASE + BITMAP_BYTES)) begin
+                    data_out[15:0] <= { bitmap_ram[address_reg+1 - BITMAP_BASE], bitmap_ram[address_reg - BITMAP_BASE] };
+                end else if (address_reg == CONTROL_ADDR - 1) begin
+                    data_out[15:0] <= { 8'b0, control_reg };
                 end
-            end else if (data_read_n == 2'b10) begin
+            end else if (data_read_n_reg == 2'b10) begin
                 // word
-                if ((address + 3) < OBJ_REGION_SZ) begin
-                    data_out[31:0] = { active_obj_ram[address+3], active_obj_ram[address+2],
-                                       active_obj_ram[address+1], active_obj_ram[address] };
-                end else if ((address >= BITMAP_BASE) && ((address + 3) < BITMAP_BASE + BITMAP_BYTES)) begin
-                    data_out[31:0] = { bitmap_ram[address+3 - BITMAP_BASE], bitmap_ram[address+2 - BITMAP_BASE],
-                                       bitmap_ram[address+1 - BITMAP_BASE], bitmap_ram[address - BITMAP_BASE] };
-                end else if (address == CONTROL_ADDR - 3) begin
-                    data_out[31:0] = { 24'b0, control_reg };
+                if ((address_reg + 3) < OBJ_REGION_SZ) begin
+                    data_out[31:0] <= { active_obj_ram[address_reg+3], active_obj_ram[address_reg+2],
+                                        active_obj_ram[address_reg+1], active_obj_ram[address_reg] };
+                end else if ((address_reg >= BITMAP_BASE) && ((address_reg + 3) < BITMAP_BASE + BITMAP_BYTES)) begin
+                    data_out[31:0] <= { bitmap_ram[address_reg+3 - BITMAP_BASE], bitmap_ram[address_reg+2 - BITMAP_BASE],
+                                        bitmap_ram[address_reg+1 - BITMAP_BASE], bitmap_ram[address_reg - BITMAP_BASE] };
+                end else if (address_reg == CONTROL_ADDR - 3) begin
+                    data_out[31:0] <= { 24'b0, control_reg };
                 end
             end
         end
     end
+end
 
     // ---- vsync / staging swap / user_interrupt protocol ----
     // On each rising edge of vsync:
@@ -187,53 +201,56 @@ module fluid_sprite #(
 // --- Sprite test loop uses active_obj_ram for stable frame display ---
     integer spr_idx;
     reg pix_hit;
-    always @(*) begin
-        pix_hit = 1'b0;
-        for (spr_idx = 0; spr_idx < MAX_SPRITES; spr_idx = spr_idx + 1) begin : SPRITES
-            // local variables per sprite
-            reg [7:0] x, y, bitmap_offset, size_byte;
-            reg [3:0] width, height;
-            reg [3:0] spr_x, spr_y;
-            integer bit_offset;
-            integer byte_addr;
-            integer bit_in_byte;
-            reg [7:0] bmp_byte;
-            reg bmp_bit;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            pix_hit <= 1'b0;
+        end else begin
+            pix_hit <= 1'b0;
+            for (spr_idx = 0; spr_idx < MAX_SPRITES; spr_idx = spr_idx + 1) begin : SPRITES
+                // local variables per sprite
+                reg [7:0] x, y, bitmap_offset, size_byte;
+                reg [3:0] width, height;
+                reg [3:0] spr_x, spr_y;
+                integer bit_offset;
+                integer byte_addr;
+                integer bit_in_byte;
+                reg [7:0] bmp_byte;
+                reg bmp_bit;
 
-            // ---- FIX STARTS HERE: Provide default values ----
-            spr_x = 4'b0;
-            spr_y = 4'b0;
-            bit_offset = 0;
-            byte_addr = 0;
-            bit_in_byte = 0;
-            bmp_byte = 8'b0;
-            bmp_bit = 1'b0;
-            // ---- FIX ENDS HERE ----
+                // Provide default values
+                spr_x = 4'b0;
+                spr_y = 4'b0;
+                bit_offset = 0;
+                byte_addr = 0;
+                bit_in_byte = 0;
+                bmp_byte = 8'b0;
+                bmp_bit = 1'b0;
 
-            // read object fields from active_obj_ram
-            x = active_obj_ram[spr_idx*OBJ_BYTES + 0];
-            y = active_obj_ram[spr_idx*OBJ_BYTES + 1];
-            bitmap_offset = active_obj_ram[spr_idx*OBJ_BYTES + 2];
-            size_byte = active_obj_ram[spr_idx*OBJ_BYTES + 3];
-            width  = size_byte[7:4] + 1;
-            height = size_byte[3:0] + 1;
+                // read object fields from active_obj_ram
+                x = active_obj_ram[spr_idx*OBJ_BYTES + 0];
+                y = active_obj_ram[spr_idx*OBJ_BYTES + 1];
+                bitmap_offset = active_obj_ram[spr_idx*OBJ_BYTES + 2];
+                size_byte = active_obj_ram[spr_idx*OBJ_BYTES + 3];
+                width  = size_byte[7:4] + 1;
+                height = size_byte[3:0] + 1;
 
-            // bounds check and fast reject
-            if ( video_active
-              && (logic_x >= x) && (logic_x < x + width)
-              && (logic_y >= y) && (logic_y < y + height) ) begin
-                // local coordinates in sprite
-                spr_x = logic_x - x;
-                spr_y = logic_y - y;
-                // bit addressing: row-major, 1 bit per pixel
-                bit_offset = spr_y * width + spr_x;
-                byte_addr  = bitmap_offset + (bit_offset >> 3); // which byte in bitmap_ram
-                bit_in_byte = bit_offset & 3'b111;               // bit index in that byte
-                if ((byte_addr >= 0) && (byte_addr < BITMAP_BYTES)) begin
-                    bmp_byte = bitmap_ram[byte_addr];
-                    // assume LSB is bit 0; if your asset format is MSB-first use bmp_byte[7-bit_in_byte]
-                    bmp_bit = bmp_byte[bit_in_byte];
-                    pix_hit = pix_hit | bmp_bit;
+                // bounds check and fast reject
+                if ( video_active
+                  && (logic_x >= x) && (logic_x < x + width)
+                  && (logic_y >= y) && (logic_y < y + height) ) begin
+                    // local coordinates in sprite
+                    spr_x = logic_x - x;
+                    spr_y = logic_y - y;
+                    // bit addressing: row-major, 1 bit per pixel
+                    bit_offset = spr_y * width + spr_x;
+                    byte_addr  = bitmap_offset + (bit_offset >> 3); // which byte in bitmap_ram
+                    bit_in_byte = bit_offset & 3'b111;               // bit index in that byte
+                    if ((byte_addr >= 0) && (byte_addr < BITMAP_BYTES)) begin
+                        bmp_byte = bitmap_ram[byte_addr];
+                        // assume LSB is bit 0; if your asset format is MSB-first use bmp_byte[7-bit_in_byte]
+                        bmp_bit = bmp_byte[bit_in_byte];
+                        pix_hit <= pix_hit | bmp_bit;
+                    end
                 end
             end
         end
