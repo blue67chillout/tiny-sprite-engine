@@ -9,8 +9,8 @@ module bg (
     output wire [1:0]  G,
     output wire [1:0]  B
 );
-    localparam H_RES = 640;
-    localparam V_RES = 480;
+    localparam H_RES = 1024;
+    localparam V_RES = 768;
 
     localparam GROUND_Y = V_RES-140,
                MOUND_X0 = 306,
