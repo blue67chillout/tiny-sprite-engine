@@ -184,6 +184,7 @@ module fluid_sprite #(
     wire [7:0] logic_y = pix_y[9:2]; // 768/4  = 192
 
     // --- Sprite test loop uses active_obj_ram for stable frame display ---
+// --- Sprite test loop uses active_obj_ram for stable frame display ---
     integer spr_idx;
     reg pix_hit;
     always @(*) begin
@@ -198,6 +199,16 @@ module fluid_sprite #(
             integer bit_in_byte;
             reg [7:0] bmp_byte;
             reg bmp_bit;
+
+            // ---- FIX STARTS HERE: Provide default values ----
+            spr_x = 4'b0;
+            spr_y = 4'b0;
+            bit_offset = 0;
+            byte_addr = 0;
+            bit_in_byte = 0;
+            bmp_byte = 8'b0;
+            bmp_bit = 1'b0;
+            // ---- FIX ENDS HERE ----
 
             // read object fields from active_obj_ram
             x = active_obj_ram[spr_idx*OBJ_BYTES + 0];
